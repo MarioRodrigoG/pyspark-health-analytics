@@ -1,0 +1,77 @@
+version: "3.8"
+
+networks:
+  health-analytics:
+    driver: bridge
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: health-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: health_analytics
+      POSTGRES_USER: spark_user
+      POSTGRES_PASSWORD: secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - health-analytics
+
+
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: health-spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+    ports:
+      - "8080:8080"  # Interfaz web de Spark
+      - "7077:7077"  # Puerto de comunicación
+    volumes:
+      - ./src:/opt/bitnami/spark/apps
+      - ./data:/opt/bitnami/spark/data
+    networks:
+      - health-analytics
+
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: health-spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=4      # Optimizado para tu CPU
+      - SPARK_WORKER_MEMORY=6G    # Optimizado para tus 16GB RAM
+      - SPARK_EXECUTOR_MEMORY=4G
+    volumes:
+      - ./src:/opt/bitnami/spark/apps
+      - ./data:/opt/bitnami/spark/data
+    networks:
+      - health-analytics
+    depends_on:
+      - spark-master
+
+
+  jupyter:
+    image: jupyter/pyspark-notebook:latest
+    container_name: health-jupyter
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - PYSPARK_SUBMIT_ARGS=--packages org.postgresql:postgresql:42.7.4 pyspark-shell
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data:/home/jovyan/data
+      - ./src:/home/jovyan/src
+    networks:
+      - health-analytics
+
+volumes:
+  postgres_data:

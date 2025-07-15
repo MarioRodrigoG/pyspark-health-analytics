@@ -1,0 +1,6 @@
+# Archivos grandes - exceden límite GitHub
+data/raw/LLCP2022.ASC
+data/raw/places_2023.csv
+data/processed/
+.ipynb_checkpoints/
+*.log
