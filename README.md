@@ -1,6 +1,6 @@
 # PySpark Health Analytics Platform
 
-## Status: TRANSFORMATIONS COMPLETED
+## Status: Transformations Completed
 
 Health analytics pipeline using PySpark, PostgreSQL, and Docker for CDC BRFSS data processing.
 
